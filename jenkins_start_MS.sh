@@ -4,6 +4,10 @@ source /opt/rh/gcc-toolset-12/enable
 
 if [[ -z "${SRC_DIR_MS}" ]]; then  SRC_DIR_MS="/mnt/raid0/src/ceph--jenkins-01--MS"  ; fi
 echo "  >> env SRC_DIR_MS = ${SRC_DIR_MS}"
+if [[ -z "${VSTART_CONF_PARAMS_MS}" ]]; then  VSTART_CONF_PARAMS_MS="-o rgw_max_objs_per_shard=100000 -o rgw_max_dynamic_shards=1999 -o rgw_data_notify_interval_msec=0 -o rgw_curl_low_speed_time=30 -o rgw_sync_log_trim_interval=1200 -o rgw_md_log_max_shards=64 -o rgw_data_log_num_shards=128 -o rgw_default_data_log_backing=fifo -o rgw_data_log_window=30 -o rgw_bucket_index_transaction_instrumentation=false -o rgw_sync_lease_period=1200"  ; fi
+echo "  >> env VSTART_CONF_PARAMS_MS = ${VSTART_CONF_PARAMS_MS}"
+if [[ -z "${S3CFG_PATH_MS}" ]]; then  SRC_DIR_MS="/mnt/raid0/src/ceph-rgw-ms-jenkins/s3cfg"  ; fi
+echo "  >> env S3CFG_PATH_MS = ${S3CFG_PATH_MS}"
 
 echo "  > id = $(id)"
 echo "  > pwd = $(pwd)"
@@ -16,6 +20,12 @@ echo "  >> env BLD_DIR_MS1 = ${BLD_DIR_MS1}"
 echo "  >> env BLD_DIR_MS2 = ${BLD_DIR_MS2}"
 #exit 1
 
+set -x
+sudo modprobe -vr zram ; sudo rm -vf /dev/zram0 /dev/zram1 /dev/zram2 /dev/zram3 ; sudo modprobe -v zram num_devices=4
+sudo zramctl /dev/zram0 -t 4 -s 33GB -a lzo; sudo zramctl /dev/zram1 -t 4 -s 6GB -a lzo
+sudo zramctl /dev/zram2 -t 4 -s 33GB -a lzo; sudo zramctl /dev/zram3 -t 4 -s 6GB -a lzo
+sudo zramctl
+set +x
 
 ###  ZONE 1  ###
 echo "###################################################################################################"
@@ -36,13 +46,15 @@ export TCMALLOC_RELEASE_RATE=1
 export CEPH_DEV=0
 
 sudo find ./out -maxdepth 1 -type f -delete ; sudo find ./out -maxdepth 1 -type s -delete ; sudo rm -rfv ./out* ; sudo rm -rf ./dev/* ; sudo chown $(id -nu):$(id -ng) -R *
+sudo wipefs -a /dev/zram0 ; sudo wipefs -a /dev/zram1 ; sudo wipefs -a /dev/zram2 ; sudo wipefs -a /dev/zram3
 sudo sysctl kernel.randomize_va_space=0 ; sudo sysctl vm.compact_memory=1 #; sync #; sudo sysctl vm.drop_caches=3
 
 sudo numactl -N 0 -m 0 -- env GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  MON=1 OSD=1 MDS=0 MGR=1 RGW=1 NFS=0  ../src/vstart.sh \
 -n -X -o ms_mon_client_mode=crc -o mon_data_avail_crit=0 \
 --bluestore --nolockdep --without-dashboard -o debug_ms=0 -o debug_objecter=0 -o bluestore_debug_enforce_settings=ssd -o bluestore_block_size=$((2500 * 1024*1024*1024)) \
+-o bluestore_block_db_path=/dev/zram0 -o bluestore_block_db_create=true -o bluestore_block_wal_path=/dev/zram1 -o bluestore_block_wal_create=true \
 -o mon_enable_op_tracker=false -o osd_enable_op_tracker=false -o rgw_override_bucket_index_max_shards=0 -o rgw_dynamic_resharding=0 -o rgw_reshard_thread_interval=600 \
--o rgw_max_objs_per_shard=100000 -o rgw_max_dynamic_shards=1999 -o rgw_resharding_multiplier_multisite=4 -o rgw_bucket_index_max_aio=256 -o rgw_put_obj_max_window_size=134217728 \
+-o rgw_resharding_multiplier_multisite=4 -o rgw_bucket_index_max_aio=256 -o rgw_put_obj_max_window_size=134217728 \
 -o bluestore_csum_type=none -o rocksdb_cache_size=1073741824 -o rgw_cache_lru_size=1000000 -o rgw_thread_pool_size=2048 -o rgw_max_concurrent_requests=2048 \
 -o rgw_get_obj_max_req_size=25165824 -o rgw_get_obj_window_size=25165824 -o rgw_max_chunk_size=25165824 -o rgw_max_listing_results=2000  -o osd_pool_default_pg_num=128 \
 -o osd_pool_default_pgp_num=128 -o mon_pg_warn_max_per_osd=10000 -o mon_max_pg_per_osd=9999 -o osd_pool_default_pg_autoscale_mode=warn  -o osd_journal_size=10240 -o osd_max_write_size=512 \
@@ -53,8 +65,7 @@ sudo numactl -N 0 -m 0 -- env GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  MON=
 -o bluestore_volume_selection_policy=use_some_extra -o bluestore_default_buffered_read=true -o bluestore_default_buffered_write=false -o bluefs_buffered_io=true \
 -o osd_mclock_force_run_benchmark_on_init=1 -o bluestore_allocation_from_file=true -o bluestore_default_buffered_read=true -o bluestore_default_buffered_write=false \
 -o bluefs_buffered_io=true -o bluestore_fsck_quick_fix_on_mount=true -o bluestore_fsck_on_mount=false -o bluestore_fsck_on_mount_deep=false \
---rgw_frontend "beast tcp_nodelay=1 request_timeout_ms=0" -o rgw_data_notify_interval_msec=0 -o rgw_curl_low_speed_time=30 -o rgw_sync_log_trim_interval=1200 -o rgw_md_log_max_shards=64 \
--o rgw_data_log_num_shards=128 -o rgw_default_data_log_backing=fifo -o rgw_data_log_window=30 -o rgw_bucket_index_transaction_instrumentation=false -o rgw_sync_lease_period=1200 \
+--rgw_frontend "beast tcp_nodelay=1 request_timeout_ms=0"  ${VSTART_CONF_PARAMS_MS}  \
 -o rgw_list_buckets_max_chunk=999999 -o bluestore_cache_autotune=false -o bluestore_cache_meta_ratio=0.8 -o bluestore_cache_kv_ratio=0.2  -o osd_memory_target_autotune=true \
 -o osd_memory_target=8589934592 -o osd_memory_cache_min=4294967296 -o bluestore_cache_size=4294967296 -o bluestore_throttle_bytes=53687091200 \
 -o bluestore_throttle_deferred_bytes=107374182400 -o osd_pg_object_context_cache_count=10240
@@ -71,8 +82,8 @@ numactl --hardware
 sudo pgrep -a radosgw ; sudo pkill -9 radosgw ; sleep 0.4 ; sudo truncate -s0 ./out/radosgw.8000.log
 sudo numactl -N 0 -m 0 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE}  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8000.log --admin-socket=./out/radosgw.8000.asok --pid-file=./out/radosgw.8000.pid -n client.rgw.8000 --rgw_frontends="beast port=8000 tcp_nodelay=1 request_timeout_ms=0" --debug_ms=0 --debug_rgw=1  # -f --default-log-to-file=true --default-log-to-stderr=false
 
-sh -c "sleep 2 ; s3cmd -c ../../s3cfg mb s3://bkt ; s3cmd -c ../../s3cfg put ./ceph.conf s3://bkt" &
-timeout 35s  tail -F ./out/radosgw.8000.log ; s3cmd -c ../../s3cfg rm s3://bkt/ceph.conf ; egrep "osd_mclock_max_capacity|bench" ./out/osd.0.log
+sh -c "sleep 2 ; s3cmd -c ${S3CFG_PATH_MS} mb s3://bkt ; s3cmd -c ${S3CFG_PATH_MS} put ./ceph.conf s3://bkt" &
+timeout 35s  tail -F ./out/radosgw.8000.log ; s3cmd -c ${S3CFG_PATH_MS} rm s3://bkt/ceph.conf ; egrep "osd_mclock_max_capacity|bench" ./out/osd.0.log
 pgrep -a ceph ; pgrep -a rados
 
 sudo pgrep -a haproxy ; sudo pkill haproxy
@@ -159,9 +170,9 @@ sudo ./bin/radosgw-admin user create --display-name="cosbench_user" --uid=cosben
 sudo ./bin/radosgw-admin subuser create --uid=cosbench --subuser=cosbench:operator --secret=redhat --access=full --key-type=swift
 sudo ./bin/radosgw-admin user modify --uid=cosbench --max-buckets=0
 
-s3cmd -c ../../s3cfg --host=127.0.0.1:8000 ls
+s3cmd -c ${S3CFG_PATH_MS} --host=127.0.0.1:8000 ls
 
-s3cmd -c ../../s3cfg mb s3://b01b000000000000 ; s3cmd -c ../../s3cfg put ./ceph.conf s3://b01b000000000000
+s3cmd -c ${S3CFG_PATH_MS} mb s3://b01b000000000000 ; s3cmd -c ${S3CFG_PATH_MS} put ./ceph.conf s3://b01b000000000000
 
 pgrep -a ceph ; pgrep -a haproxy ; pgrep -a rados
 
@@ -200,8 +211,9 @@ sudo sysctl kernel.randomize_va_space=0 ; sudo sysctl vm.compact_memory=1 #; syn
 sudo numactl -N 1 -m 1 -- env GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  MON=1 OSD=1 MDS=0 MGR=1 RGW=1 NFS=0  ../src/vstart.sh \
 -n -X -o ms_mon_client_mode=crc -o mon_data_avail_crit=0 \
 --bluestore --nolockdep --without-dashboard -o debug_ms=0 -o debug_objecter=0 -o bluestore_debug_enforce_settings=ssd -o bluestore_block_size=$((2500 * 1024*1024*1024)) \
+-o bluestore_block_db_path=/dev/zram2 -o bluestore_block_db_create=true -o bluestore_block_wal_path=/dev/zram3 -o bluestore_block_wal_create=true \
 -o mon_enable_op_tracker=false -o osd_enable_op_tracker=false -o rgw_override_bucket_index_max_shards=0 -o rgw_dynamic_resharding=0 -o rgw_reshard_thread_interval=600 \
--o rgw_max_objs_per_shard=100000 -o rgw_max_dynamic_shards=1999 -o rgw_resharding_multiplier_multisite=4 -o rgw_bucket_index_max_aio=256 -o rgw_put_obj_max_window_size=134217728 \
+-o rgw_resharding_multiplier_multisite=4 -o rgw_bucket_index_max_aio=256 -o rgw_put_obj_max_window_size=134217728 \
 -o bluestore_csum_type=none -o rocksdb_cache_size=1073741824 -o rgw_cache_lru_size=1000000 -o rgw_thread_pool_size=2048 -o rgw_max_concurrent_requests=2048 \
 -o rgw_get_obj_max_req_size=25165824 -o rgw_get_obj_window_size=25165824 -o rgw_max_chunk_size=25165824 -o rgw_max_listing_results=2000  -o osd_pool_default_pg_num=128 \
 -o osd_pool_default_pgp_num=128 -o mon_pg_warn_max_per_osd=10000 -o mon_max_pg_per_osd=9999 -o osd_pool_default_pg_autoscale_mode=warn  -o osd_journal_size=10240 -o osd_max_write_size=512 \
@@ -212,8 +224,7 @@ sudo numactl -N 1 -m 1 -- env GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  MON=
 -o bluestore_volume_selection_policy=use_some_extra -o bluestore_default_buffered_read=true -o bluestore_default_buffered_write=false -o bluefs_buffered_io=true \
 -o osd_mclock_force_run_benchmark_on_init=1 -o bluestore_allocation_from_file=true -o bluestore_default_buffered_read=true -o bluestore_default_buffered_write=false \
 -o bluefs_buffered_io=true -o bluestore_fsck_quick_fix_on_mount=true -o bluestore_fsck_on_mount=false -o bluestore_fsck_on_mount_deep=false \
---rgw_frontend "beast tcp_nodelay=1 request_timeout_ms=0" -o rgw_data_notify_interval_msec=0 -o rgw_curl_low_speed_time=30 -o rgw_sync_log_trim_interval=1200 -o rgw_md_log_max_shards=64 \
--o rgw_data_log_num_shards=128 -o rgw_default_data_log_backing=fifo -o rgw_data_log_window=30 -o rgw_bucket_index_transaction_instrumentation=false -o rgw_sync_lease_period=1200 \
+--rgw_frontend "beast tcp_nodelay=1 request_timeout_ms=0"  ${VSTART_CONF_PARAMS_MS}  \
 -o rgw_list_buckets_max_chunk=999999 -o bluestore_cache_autotune=false -o bluestore_cache_meta_ratio=0.8 -o bluestore_cache_kv_ratio=0.2  -o osd_memory_target_autotune=true \
 -o osd_memory_target=8589934592 -o osd_memory_cache_min=4294967296 -o bluestore_cache_size=4294967296 -o bluestore_throttle_bytes=53687091200 \
 -o bluestore_throttle_deferred_bytes=107374182400 -o osd_pg_object_context_cache_count=10240
@@ -315,13 +326,13 @@ sudo numactl -N 1 -m 1 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TC
 date ; pgrep -a rados
  
 
-date ; s3cmd -c ../../s3cfg --host=127.0.0.1:8004 ls
+date ; s3cmd -c ${S3CFG_PATH_MS} --host=127.0.0.1:8004 ls
 
-sleep 17.5 ; date ; s3cmd -c ../../s3cfg --host=127.0.0.1:8000 put ./ceph.conf s3://b01b000000000000 ; sleep 17.5
+sleep 17.5 ; date ; s3cmd -c ${S3CFG_PATH_MS} --host=127.0.0.1:8000 put ./ceph.conf s3://b01b000000000000 ; sleep 17.5
 date ; sudo ./bin/radosgw-admin bucket sync checkpoint --bucket b01b000000000000 --timeout-sec=3600
-date ; s3cmd -c ../../s3cfg --host=127.0.0.1:8000 rm s3://b01b000000000000/ceph.conf
+date ; s3cmd -c ${S3CFG_PATH_MS} --host=127.0.0.1:8000 rm s3://b01b000000000000/ceph.conf
 date ; sudo ./bin/radosgw-admin bucket sync checkpoint --bucket b01b000000000000 --timeout-sec=3600
-date ; s3cmd -c ../../s3cfg --host=127.0.0.1:8000 rm s3://b01b000000000000/ceph.conf  # req b/c bug on 'main' branch
+date ; s3cmd -c ${S3CFG_PATH_MS} --host=127.0.0.1:8000 rm s3://b01b000000000000/ceph.conf  # req b/c bug on 'main' branch
 
 pgrep -a ceph ; pgrep -a haproxy ; pgrep -a rados
 

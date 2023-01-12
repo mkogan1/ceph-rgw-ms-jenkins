@@ -27,7 +27,6 @@ sudo chmod a+rwx "$(dirname ${SRC_DIR_MS})"
 #exit 1
 
 sudo rm -rf "${BLD_DIR}"
-#git clone "${GITHUB_REMOTE}" --branch "${GITHUB_BRANCH}" -c core.compression=5 -c core.loosecompression=5 --jobs="$(nproc)" --recursive --progress "${BLD_DIR}" 2>&1
 git clone "${GITHUB_REMOTE}" --branch "${GITHUB_BRANCH}" -c core.compression=3 -c core.loosecompression=3 --jobs="$(nproc)" --recursive "${BLD_DIR}" 2>&1
 
 cd "${BLD_DIR}" || exit
@@ -50,8 +49,11 @@ export USELD="bfd" ; export CSLF="bfd"
 -DENABLE_GIT_VERSION=ON -DCMAKE_MODULE_LINKER_FLAGS="-fuse-ld=${USELD} -v" -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=${USELD} -v" \
 -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=${CSLF} -v" -DWITH_SYSTEM_BOOST=OFF -DWITH_BOOST_VALGRIND=ON
 
-time nice ionice cmake --build ./build --parallel "$(nproc --ignore=1)" -- vstart
+time ionice nice cmake --build ./build --parallel "$(nproc --ignore=1)" -- vstart
 
+pwd
+git remote -v
+git branch -vv
 
 set +x
 

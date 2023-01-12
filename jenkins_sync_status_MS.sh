@@ -38,6 +38,10 @@ sudo timeout 8s ./bin/radosgw-admin sync error list | grep error_code | sort | u
 ls -b ./out/radosgw*asok | xargs -i sh -c 'echo "F={}" ; sudo timeout 4s ./bin/ceph --admin-daemon {} perf dump 2>/dev/null | jq '\''to_entries[] | select(.key|startswith("data-sync-from"))'\'' | sed -e "/poll_latency/,+4d" | egrep "avgcount|sum|fetch_not_modified" ; sudo ./bin/ceph --admin-daemon {} perf dump 2>/dev/null | jq '\''.rgw.qlen'\'' '
 sudo timeout 8s ./bin/ceph status 2>/dev/null
 
+pwd
+git remote -v
+git branch -vv
+
 set +x
 sudo rm -f  ./out/client.admin.*.log
 
@@ -60,6 +64,11 @@ sudo timeout 8s ./bin/radosgw-admin bucket stats --bucket=test-100m-100000000000
 sudo timeout 8s ./bin/radosgw-admin sync error list | grep error_code | sort | uniq -c
 ls -b ./out/radosgw*asok | xargs -i sh -c 'echo "F={}" ; sudo timeout 4s ./bin/ceph --admin-daemon {} perf dump 2>/dev/null | jq '\''to_entries[] | select(.key|startswith("data-sync-from"))'\'' | sed -e "/poll_latency/,+4d" | egrep "avgcount|sum|fetch_not_modified" ; sudo ./bin/ceph --admin-daemon {} perf dump 2>/dev/null | jq '\''.rgw.qlen'\'' '
 sudo timeout 8s ./bin/ceph status 2>/dev/null
+
+pwd
+git remote -v
+git branch -vv
+
 set +x
 sudo rm -f  ./out/client.admin.*.log
 
