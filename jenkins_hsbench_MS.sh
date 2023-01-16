@@ -99,7 +99,7 @@ while sleep 10; do
 
   # SYNC completion check
   echo "--[ sync completion success condition check ] -----------------------------------------------------"
-  echo " >> OBJS_MS1 = $(numfmt --g ${OBJS_MS1})  <|---|>  OBJS_MS2 = $(numfmt --g ${OBJS_MS2})"
+  echo " >> OBJS_MS1 = $(numfmt --g ${OBJS_MS1})  <|--  HSBENCH_STAGE=${HSBENCH_STAGE} = $(numfmt --g $((OBJS_PER_STAGE_MS * HSBENCH_STAGE * 2))) obj  --|>  OBJS_MS2 = $(numfmt --g ${OBJS_MS2})"
   set -x
   if [[ ${OBJS_MS1} -gt $(( (OBJS_PER_STAGE_MS * HSBENCH_STAGE * 2) - 1000 )) && ${OBJS_MS2} -gt $(( (OBJS_PER_STAGE_MS * HSBENCH_STAGE * 2) - 1000 ))  &&  ${OBJS_MS1} -eq ${OBJS_MS2} ]]; then
     set +x
@@ -108,7 +108,7 @@ while sleep 10; do
     echo " >> SYNC_CAUGHT_UP_MS1 = ${SYNC_CAUGHT_UP_MS1} <|---|> SYNC_CAUGHT_UP_MS2 = ${SYNC_CAUGHT_UP_MS2}  ,  BUCKET_CAUGHT_UP_MS1 = ${BUCKET_CAUGHT_UP_MS1} <|---|> BUCKET_CAUGHT_UP_MS2 = ${BUCKET_CAUGHT_UP_MS2}"
     set -x
     if [[ ${SYNC_CAUGHT_UP_MS1} -eq 1  &&  ${SYNC_CAUGHT_UP_MS2} -eq 2  &&  ${BUCKET_CAUGHT_UP_MS1} -eq 1  && ${BUCKET_CAUGHT_UP_MS2} -eq 1 ]]; then
-      set +x ; echo ">>> SYNC and BUCKET SYNC complete OK - both zones are CAUGHT UP !" ; set -x
+      set +x ; echo ">>> SYNC and BUCKET SYNC complete SUCCESSFULLY - both zones are CAUGHT UP and Object number is SAME !" ; set -x
       exit 0
     fi
   fi
