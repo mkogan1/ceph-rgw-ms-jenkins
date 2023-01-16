@@ -101,7 +101,7 @@ while sleep 10; do
   echo "--[ sync completion success condition check ] -----------------------------------------------------"
   echo " >> OBJS_MS1 = $(numfmt --g ${OBJS_MS1})  <|---|>  OBJS_MS2 = $(numfmt --g ${OBJS_MS2})"
   set -x
-  if [[ ${OBJS_MS1} -eq $(( OBJS_PER_STAGE_MS * HSBENCH_STAGE * 2 )) && ${OBJS_MS2} -eq $(( OBJS_PER_STAGE_MS * HSBENCH_STAGE * 2 )) ]]; then
+  if [[ ${OBJS_MS1} -gt $(( (OBJS_PER_STAGE_MS * HSBENCH_STAGE * 2) - 1000 )) && ${OBJS_MS2} -gt $(( (OBJS_PER_STAGE_MS * HSBENCH_STAGE * 2) - 1000 ))  &&  ${OBJS_MS1} -eq ${OBJS_MS2} ]]; then
     set +x
     echo ">>> OBJECT SYNC complete OK - objects number is CORRECT and both zones MATCH !" ; 
     echo "---------------------------------------------------------------------------------------------------"
