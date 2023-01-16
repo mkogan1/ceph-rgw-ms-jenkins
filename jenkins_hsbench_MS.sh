@@ -28,6 +28,12 @@ ulimit -a ; ulimit -n 262144 ; ulimit -a
 
 # if false; then
 if true; then
+  echo "> restarting OSDs to prevent OOM:"
+  sudo pkill ceph-osd
+  while [[ $(pgrep -a ceph-osd | wc -l) -gt 0 ]]; do 
+    echo "." ; sleep 4
+  done
+  
   ###  ZONE 1  ###
   echo "###################################################################################################"
   echo "###  ZONE -1-                                                                                   ###"
@@ -35,8 +41,10 @@ if true; then
   set -x
   cd "${BLD_DIR_MS1}" || exit
   pwd
-  sudo rm -v ./hsbench.log
+  sudo numactl -N 0 -m 0 -- env TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/ceph-osd -i 0 -c ./ceph.conf --bluestore_fsck_quick_fix_on_mount=true --bluestore_fsck_on_mount=false --bluestore_fsck_on_mount_deep=false
+  sleep 10
 
+  sudo rm -v ./hsbench.log
   nice numactl -N 0 -m 0 -- ~/go/bin/hsbench -a b2345678901234567890 -s b234567890123456789012345678901234567890 -u http://127.0.0.1:8000 -z 4K -d -1 -t  400 -b 1 -n ${OBJS_PER_STAGE_MS} -m ip -bp test-100m-1 -op useast_stage${HSBENCH_STAGE}_ &> ./hsbench.log &
   sleep 5
   
@@ -50,8 +58,10 @@ if true; then
   set -x
   cd "${BLD_DIR_MS2}" || exit
   pwd
+  sudo numactl -N 1 -m 1 -- env TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/ceph-osd -i 0 -c ./ceph.conf --bluestore_fsck_quick_fix_on_mount=true --bluestore_fsck_on_mount=false --bluestore_fsck_on_mount_deep=false
+  sleep 10
+
   sudo rm -v ./hsbench.log
-  
   nice numactl -N 1 -m 1 -- ~/go/bin/hsbench -a b2345678901234567890 -s b234567890123456789012345678901234567890 -u http://127.0.0.1:8004 -z 4K -d -1 -t  400 -b 1 -n ${OBJS_PER_STAGE_MS} -m ip -bp test-100m-1 -op uswest_stage${HSBENCH_STAGE}_ &> ./hsbench.log &
 
   set +x
