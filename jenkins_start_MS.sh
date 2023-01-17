@@ -10,6 +10,16 @@ echo "  >> env VSTART_CONF_PARAMS_MS = ${VSTART_CONF_PARAMS_MS}"
 if [[ -z "${S3CFG_PATH_MS}" ]]; then  SRC_DIR_MS="/mnt/raid0/src/ceph-rgw-ms-jenkins/s3cfg"  ; fi
 echo "  >> env S3CFG_PATH_MS = ${S3CFG_PATH_MS}"
 
+if [[ -z "${DEBUG_RGW_SYNC}" ]]; then  DEBUG_RGW_SYNC="20"  ; fi
+echo "  >> env DEBUG_RGW_SYNC = ${DEBUG_RGW_SYNC}"
+if [[ -z "${DEBUG_OBJCLASS}" ]]; then  DEBUG_OBJCLASS="20"  ; fi
+echo "  >> env DEBUG_OBJCLASS = ${DEBUG_OBJCLASS}"
+if [[ -z "${DEBUG_RGW}" ]]; then  DEBUG_RGW="1"  ; fi
+echo "  >> env DEBUG_RGW = ${DEBUG_RGW}"
+if [[ -z "${DEBUG_MS}" ]]; then  DEBUG_MS="0"  ; fi
+echo "  >> env DEBUG_MS = ${DEBUG_MS}"
+
+
 echo "  > id = $(id)"
 echo "  > pwd = $(pwd)"
 echo "  > g++ --version = $(g++ --version)"
@@ -76,12 +86,12 @@ sudo ./bin/radosgw-admin subuser create --uid=cosbench --subuser=cosbench:operat
 sudo ./bin/radosgw-admin user modify --uid=cosbench --max-buckets=0
 
 sudo pgrep -a ceph-osd ; sudo pkill -9 ceph-osd ; sleep 1.6
-sudo numactl -N 0 -m 0 -- env TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/ceph-osd -i 0 -c ./ceph.conf --debug_objclass=0 ; sleep 1.5
+sudo numactl -N 0 -m 0 -- env TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/ceph-osd -i 0 -c ./ceph.conf ; sleep 1.5
 numactl --hardware
 #sudo ./bin/ceph osd set noscrub ; sudo ./bin/ceph osd set nodeep-scrub
 
 sudo pgrep -a radosgw ; sudo pkill -9 radosgw ; sleep 0.4 ; sudo truncate -s0 ./out/radosgw.8000.log
-sudo numactl -N 0 -m 0 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE}  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8000.log --admin-socket=./out/radosgw.8000.asok --pid-file=./out/radosgw.8000.pid -n client.rgw.8000 --rgw_frontends="beast port=8000 tcp_nodelay=1 request_timeout_ms=0" --debug_ms=0 --debug_rgw=1  # -f --default-log-to-file=true --default-log-to-stderr=false
+sudo numactl -N 0 -m 0 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE}  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8000.log --admin-socket=./out/radosgw.8000.asok --pid-file=./out/radosgw.8000.pid -n client.rgw.8000 --rgw_frontends="beast port=8000 tcp_nodelay=1 request_timeout_ms=0"  # -f --default-log-to-file=true --default-log-to-stderr=false
 
 sh -c "sleep 2 ; s3cmd -c ${S3CFG_PATH_MS} mb s3://bkt ; s3cmd -c ${S3CFG_PATH_MS} put ./ceph.conf s3://bkt" &
 timeout 35s  tail -F ./out/radosgw.8000.log ; s3cmd -c ${S3CFG_PATH_MS} rm s3://bkt/ceph.conf ; egrep "osd_mclock_max_capacity|bench" ./out/osd.0.log
@@ -157,13 +167,13 @@ pgrep -a rados
 sudo /usr/bin/kill --verbose -9 $(ps -ef | grep 'bin\/radosgw' | grep "800[0123]" | awk '{ print $2 }')
 sleep 2
 # hsbench client RGW
-sudo numactl -N 0 -m 0 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8000.log --admin-socket=./out/radosgw.8000.asok --pid-file=./out/radosgw.8000.pid -n client.rgw.8000 --rgw_frontends="beast port=8000 tcp_nodelay=1 request_timeout_ms=0" --debug_ms=0 --debug_rgw=1 --debug_rgw_sync=20 --rgw_dynamic_resharding=1 --rgw_run_sync_thread=0 # -f --default-log-to-file=true --default-log-to-stderr=false
+sudo numactl -N 0 -m 0 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8000.log --admin-socket=./out/radosgw.8000.asok --pid-file=./out/radosgw.8000.pid -n client.rgw.8000 --rgw_frontends="beast port=8000 tcp_nodelay=1 request_timeout_ms=0" --rgw_dynamic_resharding=1 --rgw_run_sync_thread=0 # -f --default-log-to-file=true --default-log-to-stderr=false
 # sync RGW
-sudo numactl -N 0 -m 0 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8001.log --admin-socket=./out/radosgw.8001.asok --pid-file=./out/radosgw.8001.pid -n client.rgw.8001 --rgw_frontends="beast port=8001 tcp_nodelay=1 request_timeout_ms=0" --debug_ms=0 --debug_rgw=1 --debug_rgw_sync=20 --debug_objclass=0 --rgw_dynamic_resharding=1 --rgw_run_sync_thread=1 --rgw_bucket_index_transaction_instrumentation=false --rgw_cache_enabled=true # -f
+sudo numactl -N 0 -m 0 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8001.log --admin-socket=./out/radosgw.8001.asok --pid-file=./out/radosgw.8001.pid -n client.rgw.8001 --rgw_frontends="beast port=8001 tcp_nodelay=1 request_timeout_ms=0" --rgw_dynamic_resharding=1 --rgw_run_sync_thread=1 --rgw_bucket_index_transaction_instrumentation=false --rgw_cache_enabled=true # -f
 # sync RGW
-sudo numactl -N 0 -m 0 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8002.log --admin-socket=./out/radosgw.8002.asok --pid-file=./out/radosgw.8002.pid -n client.rgw.8002 --rgw_frontends="beast port=8002 tcp_nodelay=1 request_timeout_ms=0" --debug_ms=0 --debug_rgw=1 --debug_rgw_sync=20 --debug_objclass=0 --rgw_dynamic_resharding=1 --rgw_run_sync_thread=1 --rgw_bucket_index_transaction_instrumentation=false --rgw_cache_enabled=true # -f
+sudo numactl -N 0 -m 0 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8002.log --admin-socket=./out/radosgw.8002.asok --pid-file=./out/radosgw.8002.pid -n client.rgw.8002 --rgw_frontends="beast port=8002 tcp_nodelay=1 request_timeout_ms=0" --rgw_dynamic_resharding=1 --rgw_run_sync_thread=1 --rgw_bucket_index_transaction_instrumentation=false --rgw_cache_enabled=true # -f
 # sync RGW
-sudo numactl -N 0 -m 0 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8003.log --admin-socket=./out/radosgw.8003.asok --pid-file=./out/radosgw.8003.pid -n client.rgw.8003 --rgw_frontends="beast port=8003 tcp_nodelay=1 request_timeout_ms=0" --debug_ms=0 --debug_rgw=1 --debug_rgw_sync=20 --debug_objclass=0 --rgw_dynamic_resharding=1 --rgw_run_sync_thread=1 --rgw_bucket_index_transaction_instrumentation=false --rgw_cache_enabled=true # -f
+sudo numactl -N 0 -m 0 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8003.log --admin-socket=./out/radosgw.8003.asok --pid-file=./out/radosgw.8003.pid -n client.rgw.8003 --rgw_frontends="beast port=8003 tcp_nodelay=1 request_timeout_ms=0" --rgw_dynamic_resharding=1 --rgw_run_sync_thread=1 --rgw_bucket_index_transaction_instrumentation=false --rgw_cache_enabled=true # -f
 
 pgrep -a rados
 
@@ -181,12 +191,12 @@ ls -b1tr ./out/radosgw*.asok | xargs -i echo {}
 ls -b1tr ./out/radosgw*.asok | xargs -i sudo ./bin/ceph --admin-daemon {} config show | egrep "rgw_run_sync_thread|rgw_data_log_num_shards|rgw_md_log_max_shards|rgw_data_notify_interval_msec|rgw_default_data_log_backing|rgw_sync_lease_period|rgw_dynamic_resharding|rgw_reshard_thread_interval|rgw_max_objs_per_shard|rgw_sync_log_trim_interval|rgw_bucket_index_transaction_instrumentation|rgw_data_log_window|rgw_curl_low_speed_time|rgw_cache_enabled|rgw_override_bucket_index_max_shards|rgw_thread_pool_size|rgw_max_concurrent_requests|rgw_max_dynamic_shards|rgw_resharding_multiplier_multisite"
 
 
-#ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_ms 0
-#ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_rgw 20
-#ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_rgw_sync 30
+ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_ms "${DEBUG_MS}"
+ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_rgw "${DEBUG_RGW}"
+ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_rgw_sync "${DEBUG_RGW_SYNC}"
 
-# ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_objclass 20
-# sudo ./bin/ceph tell "osd.*" injectargs --debug_objclass 20 #; sudo truncate -s0 ./out/osd.0.log
+ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_objclass "${DEBUG_OBJCLASS}"
+sudo ./bin/ceph tell "osd.*" injectargs --debug_objclass "${DEBUG_OBJCLASS} #; sudo truncate -s0 ./out/osd.0.log
 
 set +x
 
@@ -235,14 +245,14 @@ sudo ./bin/radosgw-admin user modify --uid=cosbench --max-buckets=0
 
 sudo pgrep -a ceph-osd
 sudo /usr/bin/kill --verbose -9 $(ps -ef | grep 'build\/bin\/ceph-osd' | awk '{ print $2 }') ; sleep 1.6
-sudo numactl -N 1 -m 1 -- env TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/ceph-osd -i 0 -c ./ceph.conf --debug_objclass=0 ; sleep 1.5
+sudo numactl -N 1 -m 1 -- env TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/ceph-osd -i 0 -c ./ceph.conf ; sleep 1.5
 numactl --hardware
 #sudo ./bin/ceph osd set noscrub ; sudo ./bin/ceph osd set nodeep-scrub
 
 sudo pgrep -a radosgw
 sudo /usr/bin/kill --verbose -9 $(ps -ef | grep 'bin\/radosgw' | grep "800[4567]" | awk '{ print $2 }')
 sleep 0.4 ; sudo truncate -s0 ./out/radosgw.8000.log
-sudo numactl -N 1 -m 1 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE}   /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8004.log --admin-socket=./out/radosgw.8004.asok --pid-file=./out/radosgw.8004.pid -n client.rgw.8004 --rgw_frontends="beast port=8004 tcp_nodelay=1 request_timeout_ms=0" --debug_ms=0 --debug_rgw=1  # -f --default-log-to-file=true --default-log-to-stderr=false
+sudo numactl -N 1 -m 1 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE}   /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8004.log --admin-socket=./out/radosgw.8004.asok --pid-file=./out/radosgw.8004.pid -n client.rgw.8004 --rgw_frontends="beast port=8004 tcp_nodelay=1 request_timeout_ms=0"  # -f --default-log-to-file=true --default-log-to-stderr=false
 
 pgrep -a ceph ; pgrep -a rados
 
@@ -315,13 +325,13 @@ pgrep -a rados
 sudo /usr/bin/kill --verbose -9 $(ps -ef | grep 'bin\/radosgw' | grep "800[4567]" | awk '{ print $2 }')
 sleep 2 ; date
 # hsbench client RGW
-sudo numactl -N 1 -m 1 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8004.log --admin-socket=./out/radosgw.8004.asok --pid-file=./out/radosgw.8004.pid -n client.rgw.8004 --rgw_frontends="beast port=8004 tcp_nodelay=1 request_timeout_ms=0" --debug_ms=0 --debug_rgw=1 --debug_rgw_sync=20 --rgw_dynamic_resharding=1 --rgw_run_sync_thread=0 # -f --default-log-to-file=true --default-log-to-stderr=false
+sudo numactl -N 1 -m 1 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8004.log --admin-socket=./out/radosgw.8004.asok --pid-file=./out/radosgw.8004.pid -n client.rgw.8004 --rgw_frontends="beast port=8004 tcp_nodelay=1 request_timeout_ms=0" --rgw_dynamic_resharding=1 --rgw_run_sync_thread=0 # -f --default-log-to-file=true --default-log-to-stderr=false
 # sync RGW
-sudo numactl -N 1 -m 1 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8005.log --admin-socket=./out/radosgw.8005.asok --pid-file=./out/radosgw.8005.pid -n client.rgw.8005 --rgw_frontends="beast port=8005 tcp_nodelay=1 request_timeout_ms=0" --debug_ms=0 --debug_rgw=1 --debug_rgw_sync=20 --debug_objclass=0 --rgw_dynamic_resharding=1 --rgw_run_sync_thread=1 --rgw_bucket_index_transaction_instrumentation=false --rgw_cache_enabled=true # -f
+sudo numactl -N 1 -m 1 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8005.log --admin-socket=./out/radosgw.8005.asok --pid-file=./out/radosgw.8005.pid -n client.rgw.8005 --rgw_frontends="beast port=8005 tcp_nodelay=1 request_timeout_ms=0" --rgw_dynamic_resharding=1 --rgw_run_sync_thread=1 --rgw_bucket_index_transaction_instrumentation=false --rgw_cache_enabled=true # -f
 # sync RGW
-sudo numactl -N 1 -m 1 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8006.log --admin-socket=./out/radosgw.8006.asok --pid-file=./out/radosgw.8006.pid -n client.rgw.8006 --rgw_frontends="beast port=8006 tcp_nodelay=1 request_timeout_ms=0" --debug_ms=0 --debug_rgw=1 --debug_rgw_sync=20 --debug_objclass=0 --rgw_dynamic_resharding=1 --rgw_run_sync_thread=1 --rgw_bucket_index_transaction_instrumentation=false --rgw_cache_enabled=true # -f
+sudo numactl -N 1 -m 1 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8006.log --admin-socket=./out/radosgw.8006.asok --pid-file=./out/radosgw.8006.pid -n client.rgw.8006 --rgw_frontends="beast port=8006 tcp_nodelay=1 request_timeout_ms=0" --rgw_dynamic_resharding=1 --rgw_run_sync_thread=1 --rgw_bucket_index_transaction_instrumentation=false --rgw_cache_enabled=true # -f
 # sync RGW
-sudo numactl -N 1 -m 1 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8007.log --admin-socket=./out/radosgw.8007.asok --pid-file=./out/radosgw.8007.pid -n client.rgw.8007 --rgw_frontends="beast port=8007 tcp_nodelay=1 request_timeout_ms=0" --debug_ms=0 --debug_rgw=1 --debug_rgw_sync=20 --debug_objclass=0 --rgw_dynamic_resharding=1 --rgw_run_sync_thread=1 --rgw_bucket_index_transaction_instrumentation=false --rgw_cache_enabled=true # -f
+sudo numactl -N 1 -m 1 -- env TCMALLOC_LARGE_ALLOC_REPORT_THRESHOLD=268435456 TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_AGGRESSIVE_DECOMMIT=${TCMALLOC_AGGRESSIVE_DECOMMIT}  TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/radosgw  --nolockdep -c ./ceph.conf --log-file=./out/radosgw.8007.log --admin-socket=./out/radosgw.8007.asok --pid-file=./out/radosgw.8007.pid -n client.rgw.8007 --rgw_frontends="beast port=8007 tcp_nodelay=1 request_timeout_ms=0" --rgw_dynamic_resharding=1 --rgw_run_sync_thread=1 --rgw_bucket_index_transaction_instrumentation=false --rgw_cache_enabled=true # -f
 
 
 date ; pgrep -a rados
@@ -342,11 +352,11 @@ ls -b1tr ./out/radosgw*.asok | xargs -i sudo ./bin/ceph --admin-daemon {} config
 date
 
 
-#ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_ms 0
-#ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_rgw 20
-#ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_rgw_sync 30
+ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_ms "${DEBUG_MS}"
+ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_rgw "${DEBUG_RGW}"
+ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_rgw_sync "${DEBUG_RGW_SYNC}"
 
-# ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_objclass 20
-# sudo ./bin/ceph tell "osd.*" injectargs --debug_objclass 20 #; sudo truncate -s0 ./out/osd.0.log
+ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_objclass "${DEBUG_OBJCLASS}"
+sudo ./bin/ceph tell "osd.*" injectargs --debug_objclass "${DEBUG_OBJCLASS}" #; sudo truncate -s0 ./out/osd.0.log
 
 set +x
