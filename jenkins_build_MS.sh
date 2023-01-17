@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+echo "  >>>>>> \$0 = ${0}"
 source /opt/rh/gcc-toolset-12/enable
 
 if [[ -z "${GITHUB_REMOTE}" ]]; then  exit 1  ; fi

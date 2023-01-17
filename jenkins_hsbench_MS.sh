@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 #set -e
+echo "  >>>>>> \$0 = ${0}"
 source /opt/rh/gcc-toolset-12/enable
 
 if [[ -z "${SRC_DIR_MS}" ]]; then  SRC_DIR_MS="/mnt/raid0/src/ceph--jenkins-01--MS"  ; fi
