@@ -22,6 +22,7 @@ BLD_DIR_MS2="${SRC_DIR_MS}2/build"
 echo "  >> env BLD_DIR_MS1 = ${BLD_DIR_MS1}"
 echo "  >> env BLD_DIR_MS2 = ${BLD_DIR_MS2}"
 #exit 1
+#exit 0
 
 
 ulimit -a ; ulimit -n 262144 ; ulimit -a
