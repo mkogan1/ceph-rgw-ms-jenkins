@@ -196,7 +196,7 @@ ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} confi
 ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_rgw_sync "${DEBUG_RGW_SYNC}"
 
 ls -b1tr ./out/radosgw*.asok | xargs -i  sudo ./bin/ceph --admin-daemon {} config set debug_objclass "${DEBUG_OBJCLASS}"
-sudo ./bin/ceph tell "osd.*" injectargs --debug_objclass "${DEBUG_OBJCLASS} #; sudo truncate -s0 ./out/osd.0.log
+sudo ./bin/ceph tell "osd.*" injectargs --debug_objclass "${DEBUG_OBJCLASS}" #; sudo truncate -s0 ./out/osd.0.log
 
 set +x
 
