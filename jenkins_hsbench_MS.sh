@@ -35,6 +35,8 @@ if true; then
   while [[ $(pgrep -a ceph-osd | wc -l) -gt 0 ]]; do 
     echo "." ; sleep 4
   done
+  export TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=134217728
+  export TCMALLOC_RELEASE_RATE=1
   
   ###  ZONE 1  ###
   echo "###################################################################################################"
@@ -43,7 +45,7 @@ if true; then
   set -x
   cd "${BLD_DIR_MS1}" || exit
   pwd
-  sudo numactl -N 0 -m 0 -- env TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/ceph-osd -i 0 -c ./ceph.conf --bluestore_fsck_quick_fix_on_mount=true --bluestore_fsck_on_mount=false --bluestore_fsck_on_mount_deep=false
+  sudo numactl -N 0 -m 0 -- env TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE}  /usr/local/bin/eatmydata ./bin/ceph-osd -i 0 -c ./ceph.conf --bluestore_fsck_quick_fix_on_mount=true --bluestore_fsck_on_mount=false --bluestore_fsck_on_mount_deep=false
   sleep 10
 
   sudo rm -v ./hsbench.log
@@ -60,7 +62,7 @@ if true; then
   set -x
   cd "${BLD_DIR_MS2}" || exit
   pwd
-  sudo numactl -N 1 -m 1 -- env TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE} GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  /usr/local/bin/eatmydata ./bin/ceph-osd -i 0 -c ./ceph.conf --bluestore_fsck_quick_fix_on_mount=true --bluestore_fsck_on_mount=false --bluestore_fsck_on_mount_deep=false
+  sudo numactl -N 1 -m 1 -- env TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES=${TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES} TCMALLOC_RELEASE_RATE=${TCMALLOC_RELEASE_RATE}  /usr/local/bin/eatmydata ./bin/ceph-osd -i 0 -c ./ceph.conf --bluestore_fsck_quick_fix_on_mount=true --bluestore_fsck_on_mount=false --bluestore_fsck_on_mount_deep=false
   sleep 10
 
   sudo rm -v ./hsbench.log
