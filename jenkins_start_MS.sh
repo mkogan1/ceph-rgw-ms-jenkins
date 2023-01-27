@@ -69,7 +69,7 @@ sudo numactl -N 0 -m 0 -- env GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  MON=
 -o bluestore_csum_type=none -o rocksdb_cache_size=1073741824 -o rgw_cache_lru_size=1000000 -o rgw_thread_pool_size=2048 -o rgw_max_concurrent_requests=2048 \
 -o rgw_get_obj_max_req_size=25165824 -o rgw_get_obj_window_size=25165824 -o rgw_max_chunk_size=25165824 -o rgw_max_listing_results=2000  -o osd_pool_default_pg_num=128 \
 -o osd_pool_default_pgp_num=128 -o mon_pg_warn_max_per_osd=10000 -o mon_max_pg_per_osd=9999 -o osd_pool_default_pg_autoscale_mode=warn  -o osd_journal_size=10240 -o osd_max_write_size=512 \
--o osd_map_cache_size=1024 -o osd_min_pg_log_entries=30000 -o osd_max_pg_log_entries=100000 -o osd_op_log_threshold=50  -o bluestore_min_alloc_size=4096 -o bluestore_min_alloc_size_hdd=4096 \
+-o osd_map_cache_size=1024 -o osd_op_log_threshold=50  -o bluestore_min_alloc_size=4096 -o bluestore_min_alloc_size_hdd=4096 \
 -o bluestore_min_alloc_size_ssd=4096  -o ms_dispatch_throttle_bytes=1048576000 -o ms_crc_data=false -o ms_crc_header=false -o ms_async_op_threads=6 -o ms_async_max_op_threads=16 \
 -o objecter_inflight_op_bytes=5368709120 -o objecter_inflight_ops=24576 -o osd_op_num_threads_per_shard=2 -o bluestore_cache_trim_max_skip_pinned=10000   -o osd_pg_log_dups_tracked=10 \
 -o osd_pg_log_trim_min=10 -o max_open_files=500000 -o mon_allow_pool_delete=true -o mon_allow_pool_size_one=true -o mutex_perf_counter=false -o throttler_perf_counter=false \
@@ -79,7 +79,11 @@ sudo numactl -N 0 -m 0 -- env GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  MON=
 --rgw_frontend "beast tcp_nodelay=1 request_timeout_ms=0"  ${VSTART_CONF_PARAMS_MS}  \
 -o rgw_list_buckets_max_chunk=999999 -o bluestore_cache_autotune=false -o bluestore_cache_meta_ratio=0.8 -o bluestore_cache_kv_ratio=0.2  -o osd_memory_target_autotune=true \
 -o osd_memory_target=8589934592 -o osd_memory_cache_min=4294967296 -o bluestore_cache_size=4294967296 -o bluestore_throttle_bytes=53687091200 \
--o bluestore_throttle_deferred_bytes=107374182400 -o osd_pg_object_context_cache_count=10240
+-o bluestore_throttle_deferred_bytes=107374182400
+
+# BISECT - lower memory usage:
+#-o osd_pg_object_context_cache_count=10240
+#-o osd_min_pg_log_entries=30000 -o osd_max_pg_log_entries=100000 
 
 sudo ./bin/radosgw-admin user create --display-name="cosbench_user" --uid=cosbench --access-key b2345678901234567890 --secret b234567890123456789012345678901234567890
 sudo ./bin/radosgw-admin subuser create --uid=cosbench --subuser=cosbench:operator --secret=redhat --access=full --key-type=swift
@@ -228,7 +232,7 @@ sudo numactl -N 1 -m 1 -- env GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  MON=
 -o bluestore_csum_type=none -o rocksdb_cache_size=1073741824 -o rgw_cache_lru_size=1000000 -o rgw_thread_pool_size=2048 -o rgw_max_concurrent_requests=2048 \
 -o rgw_get_obj_max_req_size=25165824 -o rgw_get_obj_window_size=25165824 -o rgw_max_chunk_size=25165824 -o rgw_max_listing_results=2000  -o osd_pool_default_pg_num=128 \
 -o osd_pool_default_pgp_num=128 -o mon_pg_warn_max_per_osd=10000 -o mon_max_pg_per_osd=9999 -o osd_pool_default_pg_autoscale_mode=warn  -o osd_journal_size=10240 -o osd_max_write_size=512 \
--o osd_map_cache_size=1024 -o osd_min_pg_log_entries=30000 -o osd_max_pg_log_entries=100000 -o osd_op_log_threshold=50  -o bluestore_min_alloc_size=4096 -o bluestore_min_alloc_size_hdd=4096 \
+-o osd_map_cache_size=1024 -o osd_op_log_threshold=50  -o bluestore_min_alloc_size=4096 -o bluestore_min_alloc_size_hdd=4096 \
 -o bluestore_min_alloc_size_ssd=4096  -o ms_dispatch_throttle_bytes=1048576000 -o ms_crc_data=false -o ms_crc_header=false -o ms_async_op_threads=6 -o ms_async_max_op_threads=16 \
 -o objecter_inflight_op_bytes=5368709120 -o objecter_inflight_ops=24576 -o osd_op_num_threads_per_shard=2 -o bluestore_cache_trim_max_skip_pinned=10000   -o osd_pg_log_dups_tracked=10 \
 -o osd_pg_log_trim_min=10 -o max_open_files=500000 -o mon_allow_pool_delete=true -o mon_allow_pool_size_one=true -o mutex_perf_counter=false -o throttler_perf_counter=false \
@@ -238,7 +242,11 @@ sudo numactl -N 1 -m 1 -- env GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  MON=
 --rgw_frontend "beast tcp_nodelay=1 request_timeout_ms=0"  ${VSTART_CONF_PARAMS_MS}  \
 -o rgw_list_buckets_max_chunk=999999 -o bluestore_cache_autotune=false -o bluestore_cache_meta_ratio=0.8 -o bluestore_cache_kv_ratio=0.2  -o osd_memory_target_autotune=true \
 -o osd_memory_target=8589934592 -o osd_memory_cache_min=4294967296 -o bluestore_cache_size=4294967296 -o bluestore_throttle_bytes=53687091200 \
--o bluestore_throttle_deferred_bytes=107374182400 -o osd_pg_object_context_cache_count=10240
+-o bluestore_throttle_deferred_bytes=107374182400
+
+# BISECT - lower memory usage:
+#-o osd_pg_object_context_cache_count=10240
+#-o osd_min_pg_log_entries=30000 -o osd_max_pg_log_entries=100000
 
 sudo ./bin/radosgw-admin subuser create --uid=cosbench --subuser=cosbench:operator --secret=redhat --access=full --key-type=swift
 sudo ./bin/radosgw-admin user modify --uid=cosbench --max-buckets=0
