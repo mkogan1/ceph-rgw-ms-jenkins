@@ -50,5 +50,12 @@ This Project will run a _sync status_, _bucket sync status_ and _rados df_ on bo
 This Project will execcute `stop.sh` on both MS sites (WARNING: this Project does not require any parameters)
 
 
-[//]: # (# MS Jenkins Installation:)
+
+## Terminal access to sync status and logs:
+```
+cd /mnt/raid0/src/ceph--jenkins-01--MS1/build
+# - or -
+cd /mnt/raid0/src/ceph--jenkins-01--MS2/build
+
+cd $PWD ; nice watch -cd "cd $PWD ; df -h / . | ccze -Aonolookups ; sudo timeout 4s ./bin/radosgw-admin sync status 2>/dev/null | ccze -Aonolookups ; sudo timeout 4s ./bin/radosgw-admin bucket sync status --bucket=test-100m-1000000000000 2>/dev/null | colrm 142 | tail -4 | ccze -Aonolookups ; sudo timeout 4s ./bin/rados df 2>/dev/null | grep -v default | colrm 142 | ccze -Aonolookups ; sudo timeout 4s ./bin/radosgw-admin bucket stats --bucket=test-100m-1000000000000 --sync-stats 2>/dev/null | grep num_shards ; sudo timeout 4s ./bin/radosgw-admin sync error list | grep error_code | sort | uniq -c ; ls -b ./out/radosgw*asok | xargs -i sh -c 'echo \"F={}\" ; sudo timeout 4s ./bin/ceph --admin-daemon {} perf dump 2>/dev/null | jq -C '\''to_entries[] | select(.key|startswith(\"data-sync-from\"))'\'' | sed -e \"/poll_latency/,+4d\" | egrep \"avgcount|sum|fetch_not_modified\" ; sudo ./bin/ceph --admin-daemon {} perf dump 2>/dev/null | jq -C '\''.rgw.qlen'\'' ' ; sudo timeout 4s ./bin/ceph status 2>/dev/null | ccze -Aonolookups ; sudo rm -f  ./out/client.admin.*.log"
 
