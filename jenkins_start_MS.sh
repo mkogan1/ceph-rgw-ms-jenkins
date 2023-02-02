@@ -66,7 +66,7 @@ sudo numactl -N 0 -m 0 -- env GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  MON=
 -o bluestore_block_db_path=/dev/zram0 -o bluestore_block_db_create=true -o bluestore_block_wal_path=/dev/zram1 -o bluestore_block_wal_create=true \
 -o mon_enable_op_tracker=false -o osd_enable_op_tracker=false -o rgw_override_bucket_index_max_shards=0 -o rgw_dynamic_resharding=0 -o rgw_reshard_thread_interval=600 \
 -o rgw_resharding_multiplier_multisite=4 -o rgw_bucket_index_max_aio=256 -o rgw_put_obj_max_window_size=134217728 \
--o bluestore_csum_type=none -o rocksdb_cache_size=1073741824 -o rgw_cache_lru_size=1000000 -o rgw_thread_pool_size=2048 -o rgw_max_concurrent_requests=2048 \
+-o bluestore_csum_type=none -o rocksdb_cache_size=1073741824 -o rgw_cache_lru_size=1000000 \
 -o rgw_get_obj_max_req_size=25165824 -o rgw_get_obj_window_size=25165824 -o rgw_max_chunk_size=25165824 -o rgw_max_listing_results=2000  -o osd_pool_default_pg_num=128 \
 -o osd_pool_default_pgp_num=128 -o mon_pg_warn_max_per_osd=10000 -o mon_max_pg_per_osd=9999 -o osd_pool_default_pg_autoscale_mode=warn  -o osd_journal_size=10240 -o osd_max_write_size=512 \
 -o osd_map_cache_size=1024 -o osd_op_log_threshold=50  -o bluestore_min_alloc_size=4096 -o bluestore_min_alloc_size_hdd=4096 \
@@ -229,7 +229,7 @@ sudo numactl -N 1 -m 1 -- env GLIBC_TUNABLES="glibc.elision.enable=${GEE}"  MON=
 -o bluestore_block_db_path=/dev/zram2 -o bluestore_block_db_create=true -o bluestore_block_wal_path=/dev/zram3 -o bluestore_block_wal_create=true \
 -o mon_enable_op_tracker=false -o osd_enable_op_tracker=false -o rgw_override_bucket_index_max_shards=0 -o rgw_dynamic_resharding=0 -o rgw_reshard_thread_interval=600 \
 -o rgw_resharding_multiplier_multisite=4 -o rgw_bucket_index_max_aio=256 -o rgw_put_obj_max_window_size=134217728 \
--o bluestore_csum_type=none -o rocksdb_cache_size=1073741824 -o rgw_cache_lru_size=1000000 -o rgw_thread_pool_size=2048 -o rgw_max_concurrent_requests=2048 \
+-o bluestore_csum_type=none -o rocksdb_cache_size=1073741824 -o rgw_cache_lru_size=1000000 \
 -o rgw_get_obj_max_req_size=25165824 -o rgw_get_obj_window_size=25165824 -o rgw_max_chunk_size=25165824 -o rgw_max_listing_results=2000  -o osd_pool_default_pg_num=128 \
 -o osd_pool_default_pgp_num=128 -o mon_pg_warn_max_per_osd=10000 -o mon_max_pg_per_osd=9999 -o osd_pool_default_pg_autoscale_mode=warn  -o osd_journal_size=10240 -o osd_max_write_size=512 \
 -o osd_map_cache_size=1024 -o osd_op_log_threshold=50  -o bluestore_min_alloc_size=4096 -o bluestore_min_alloc_size_hdd=4096 \
