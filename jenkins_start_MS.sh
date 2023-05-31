@@ -20,9 +20,18 @@ if [[ -z "${DEBUG_MS}" ]]; then  DEBUG_MS="0"  ; fi
 echo "  >> env DEBUG_MS = ${DEBUG_MS}"
 
 
+DIRNAME=$(dirname "${0}")
+echo "  > DIRNAME=${DIRNAME}"
 echo "  > id = $(id)"
 echo "  > pwd = $(pwd)"
 echo "  > g++ --version = $(g++ --version)"
+
+
+
+echo "***************************************************************************************************"
+echo "Execute STOP MS"
+echo "***************************************************************************************************"
+${DIRNAME}/jenkins_stop_MS.sh
 
 
 BLD_DIR_MS1="${SRC_DIR_MS}1/build"
