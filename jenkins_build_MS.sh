@@ -39,7 +39,7 @@ export USELD="bfd" ; export CSLF="bfd"
 -DWITH_RADOSGW_AMQP_ENDPOINT=OFF -DWITH_RADOSGW_KAFKA_ENDPOINT=OFF -DWITH_LZ4=ON -DWITH_JAEGER=OFF -DWITH_FIO=OFF \
 -DWITH_RADOSGW_DBSTORE=ON -DWITH_KVS=OFF -DWITH_MGR_ROOK_CLIENT=OFF -DWITH_LIBCEPHSQLITE=OFF -DWITH_CEPH_DEBUG_MUTEX=OFF \
 -DWITH_RADOSGW_BEAST_OPENSSL=ON -DWITH_EC_ISA_PLUGIN=OFF -DWITH_RADOSGW_LUA_PACKAGES=ON -DWITH_XFS=OFF -DWITH_RADOSGW_SELECT_PARQUET=OFF \
--DWITH_CCACHE=OFF \
+-DWITH_CCACHE=OFF -DWITH_NVMEOF_GATEWAY_MONITOR_CLIENT=OFF \
 -DCMAKE_CXX_FLAGS="-Wp,-D_GLIBCXX_ASSERTIONS -fstack-clash-protection -pipe -frecord-gcc-switches -grecord-gcc-switches \
 -fno-omit-frame-pointer -fstack-protector-strong -ggdb3 -gdwarf-4 -Ofast -fcf-protection=none -Warray-bounds \
 -Wp,-D_FORTIFY_SOURCE=2 -march=native -mavx2 -mfma -ffp-contract=fast -ffast-math -mfpmath=sse --param=ssp-buffer-size=16" \
@@ -48,9 +48,16 @@ export USELD="bfd" ; export CSLF="bfd"
 -Wp,-D_FORTIFY_SOURCE=2 -march=native -mavx2 -mfma -ffp-contract=fast -ffast-math -mfpmath=sse --param=ssp-buffer-size=16" \
 -G "Unix Makefiles" -DALLOCATOR=tcmalloc -DCMAKE_BUILD_TYPE=RelWithDebInfo -DWITH_LIBURING=ON -DWITH_TESTS=OFF \
 -DENABLE_GIT_VERSION=ON -DCMAKE_MODULE_LINKER_FLAGS="-fuse-ld=${USELD} -v" -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=${USELD} -v" \
--DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=${CSLF} -v" -DWITH_SYSTEM_BOOST=OFF -DWITH_BOOST_VALGRIND=ON
+-DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=${CSLF} -v" -DWITH_SYSTEM_BOOST=OFF -DWITH_BOOST_VALGRIND=ON \
+-DWITH_PYTHON3=3.12
 
+set +e
 time ionice nice cmake --build ./build --parallel "$(nproc --ignore=1)" -- vstart
+set -e
+source ./build/ceph-volume-virtualenv/bin/activate ; python3 -m pip install setuptools ; deactivate
+source ./build/ceph-volume-virtualenv/bin/activate ; python3 -m pip install pyyaml ; deactivate
+time ionice nice cmake --build ./build --parallel "$(nproc --ignore=1)" -- vstart
+
 
 pwd
 git remote -v
