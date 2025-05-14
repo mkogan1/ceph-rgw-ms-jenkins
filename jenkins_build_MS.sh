@@ -49,7 +49,8 @@ export USELD="bfd" ; export CSLF="bfd"
 -G "Unix Makefiles" -DALLOCATOR=tcmalloc -DCMAKE_BUILD_TYPE=RelWithDebInfo -DWITH_LIBURING=ON -DWITH_TESTS=OFF \
 -DENABLE_GIT_VERSION=ON -DCMAKE_MODULE_LINKER_FLAGS="-fuse-ld=${USELD} -v" -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=${USELD} -v" \
 -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=${CSLF} -v" -DWITH_SYSTEM_BOOST=OFF -DWITH_BOOST_VALGRIND=ON \
--DWITH_PYTHON3=3.12
+-DWITH_PYTHON3=3.11
+#-DWITH_PYTHON3=3.12
 
 set +e
 time ionice nice cmake --build ./build --parallel "$(nproc --ignore=1)" -- vstart
